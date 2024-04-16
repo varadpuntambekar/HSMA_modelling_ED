@@ -18,3 +18,7 @@ Key output indicators
 2) Mean of all queuing times for 100 runs
 
 Store information and write it in a pandas dataframe. This will be very helpful later on to manipulate the data
+
+
+![DES practice ED question](https://github.com/varadpuntambekar/HSMA_modelling_ED/assets/147520919/936c9665-bf31-4f1f-82ed-56d2bf9729ca)
+
