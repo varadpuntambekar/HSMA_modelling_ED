@@ -50,6 +50,7 @@ class ed_patient (object):
         self.q_nurse = 0
         self.ed_ass_time = 0
         self.ace_ass_time = 0
+        self.total_time_in_system = 0
         
 
 class ED_sim (object):
@@ -121,7 +122,18 @@ def change_initial_condition(independent_variable):
     '''
 
 
+def file_opener(filename):
+    '''
+    Opens a file when given a filename or a filepath and makes it suitable for writing
+    '''
+    pass
 
+def file_writer(filename):
+    '''
+    Adds one row to the filename that is passed to it
+    '''
+    
+    pass
 
 
 
