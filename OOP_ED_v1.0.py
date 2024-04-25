@@ -15,7 +15,7 @@ import pandas as pd
 import random
 import csv
 
-class global_variables (object):
+class g (object):
     '''
     A class that holds all the global variables that will be passed into the different processes.
     It's easier to change the global variables here rather than change them in the process code as it could lead to errors
@@ -50,15 +50,36 @@ class ed_patient (object):
         self.q_nurse = 0
         self.ed_ass_time = 0
         self.ace_ass_time = 0
-        
+        self.tot_system_time = 0
 
 class ED_sim (object):
     '''
     This is the actual clinic where everything is simulated.
     '''
     def __init__(self, run_number):
-        pass
-    
+        self.env = simpy.Environment()
+        #declaring resources
+        self.receptionist = simpy.Resource(self.env, capacity = g.receptionist)
+        self.nurse = simpy.Resource(self.env, capacity = g.nurse)
+        self.ed_doc = simpy.Resource(self.env, capacity = g.ed_doc)
+        self.acu_doc = simpy.Resource(self.env, capacity = g.acu_doc)
+        self.run_number = run_number
+        
+        #initiating a dataframe with required columns
+        self.individual_level_results = pd.DataFrame({
+            "UHID" :[], 
+             "Q_time_receptionist":[], 
+             "Q_time_nurse":[],
+             "Q_time_acu_doc":[],
+             "Q_time_ed_doc":[],
+             "Service_time_receptionist":[],
+             "Service_time_nurse":[],
+             "Service_time_acu_doc":[],
+             "Service_time_ed_doc":[],
+             "Total time in System":[]
+             })
+        
+        
     def generate_ed_arrivals(self):
         pass
     
@@ -120,7 +141,18 @@ def change_initial_condition(independent_variable):
     And stores the results of all the sims for the different initial condition in a different dataframe
     '''
 
+def file_opener(filename):
+    '''
+    Opens a file when given a filename or a filepath and makes it suitable for writing
+    '''
+    pass
 
+def file_writer(filename):
+    '''
+    Adds one row to the filename that is passed to it
+    '''
+    
+    pass
 
 
 
