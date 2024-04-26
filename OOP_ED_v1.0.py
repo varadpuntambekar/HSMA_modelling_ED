@@ -34,9 +34,9 @@ class g (object):
     acu_doc = 1
     
     #simulation variables
-    number_of_runs = 100
+    number_of_runs = 1
     warmup_time = 1440 #24 hours and 60 minutes per hour
-    run_time = 48*60 # mins
+    run_time = 10 # mins
 
 class ed_patient (object):
     '''
@@ -46,7 +46,9 @@ class ed_patient (object):
     '''
     def __init__(self, uhid):
         self.id = uhid
-        self.q_reception = 0 #declaring these variables as they will be recorded and manipulated with later
+        
+        #declaring these variables as they will be recorded and manipulated with later
+        self.q_reception = 0 
         self.q_nurse = 0
         self.ed_ass_time = 0
         self.ace_ass_time = 0
@@ -57,7 +59,10 @@ class ED_sim (object):
     This is the actual clinic where everything is simulated.
     '''
     def __init__(self, run_number):
+        #declaring the environment
         self.env = simpy.Environment()
+        self.patient_counter = 0
+        
         #declaring resources
         self.receptionist = simpy.Resource(self.env, capacity = g.receptionist)
         self.nurse = simpy.Resource(self.env, capacity = g.nurse)
@@ -67,7 +72,8 @@ class ED_sim (object):
         
         #initiating a dataframe with required columns
         self.individual_level_results = pd.DataFrame({
-            "UHID" :[], 
+            "UHID" :[],
+            "Time_entered_in_system" : [],
              "Q_time_receptionist":[], 
              "Q_time_nurse":[],
              "Q_time_acu_doc":[],
@@ -78,13 +84,49 @@ class ED_sim (object):
              "Service_time_ed_doc":[],
              "Total time in System":[]
              })
-        
+        self.individual_level_results.set_index('UHID', inplace= True) #sets the index to UHID which is just 1,2,3,4 etc
         
     def generate_ed_arrivals(self):
-        pass
+        while True:
+            self.patient_counter += 1 #this is also the UHID of the patient
+            
+            ed_pt = ed_patient(self.patient_counter)
+            
+            self.time_entered_in_system = self.env.now #Used to calculate total time spent in the system
+            
+            #Patient goes to registeration
+            self.env.process(self.registration(ed_pt))
+            
+            #print(self.individual_level_results)
+            #draws a random value from an exponential distribution with lambda = interarrival time
+            ed_arrival_time = random.expovariate(1/g.ed_inter_arrival)
+            
+            yield self.env.timeout(ed_arrival_time)
+        
     
     def registration(self, patient):
-        pass
+        
+        start_q_rec = self.env.now
+        
+        with self.receptionist.request() as req:
+            yield req
+        
+        end_q_rec = self.env.now
+        
+        self.q_time_rec = start_q_rec - end_q_rec
+        
+        
+        
+        register_time = random.triangular(0,g.mean_registeration, 2*g.mean_registeration)
+        
+        self.individual_level_results['Service_time_receptionist'] = register_time
+        
+        
+        #add variables to the df
+        ED_sim.add_to_df(self)
+        print(self.individual_level_results)
+        
+        yield self.env.timeout(register_time)
     
     def triage (self, patient):
         pass
@@ -95,16 +137,44 @@ class ED_sim (object):
     def acu_ass (self, patient):
         pass    
     
+    def add_to_df(self):
+        '''
+        Basically takes all the variables and adds them to the dataframe without having to enter them manually with 
+        4 line codes in every function
+        '''
+        df_to_add = pd.DataFrame({
+            "UHID" :[self.patient_counter],
+            "Time_entered_in_system" : [self.time_entered_in_system],
+            "Q_time_receptionist":[self.q_time_rec],
+            
+            #using zeros as placeholders
+            "Q_time_nurse":[0],
+            "Q_time_acu_doc":[0],
+            "Q_time_ed_doc":[0],
+            "Service_time_receptionist":[0],
+            "Service_time_nurse":[0],
+            "Service_time_acu_doc":[0],
+            "Service_time_ed_doc":[0],
+            "Total time in System":[0]        
+              })
+        
+        df_to_add.set_index('UHID', inplace=True)
+        self.individual_level_results._append(df_to_add)
+        
+        
+        
     def mean_calculator (self, dataframe):
         '''
         calculates the average statistic for each individual run for all the different KPIs and maybe stores it in a global database
         '''
-        pass
+        
     
     def run (self):
         '''
         suns the simulation program
         '''
+        self.env.process(self.generate_ed_arrivals())
+        self.env.run(g.run_time)
 
 class summary_statistics(object):
     '''
@@ -163,7 +233,7 @@ def Plotter (dataframe):
     '''
     pass
 
-
+ED_sim(1).run()
     
 
         
