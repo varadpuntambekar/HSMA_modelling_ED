@@ -48,10 +48,15 @@ class ed_patient (object):
         self.id = uhid
         
         #declaring these variables as they will be recorded and manipulated with later
+        self.time_entered_in_system = 0
         self.q_reception = 0 
+        self.service_reception = 0
         self.q_nurse = 0
+        self.service_nurse = 0
+        self.q_edd_ass = 0
         self.ed_ass_time = 0
-        self.ace_ass_time = 0
+        self.acu_ass_time = 0
+        self.q_acu_ass = 0
         self.tot_system_time = 0
 
 class ED_sim (object):
@@ -92,7 +97,7 @@ class ED_sim (object):
             
             ed_pt = ed_patient(self.patient_counter)
             
-            self.time_entered_in_system = self.env.now #Used to calculate total time spent in the system
+            ed_pt.time_entered_in_system = self.env.now #Used to calculate total time spent in the system
             
             #Patient goes to registeration
             self.env.process(self.registration(ed_pt))
@@ -113,18 +118,15 @@ class ED_sim (object):
         
         end_q_rec = self.env.now
         
-        self.q_time_rec = start_q_rec - end_q_rec
-        
-        
+        #storing patient level values in patient level variables
+        patient.q_time_rec = start_q_rec - end_q_rec
         
         register_time = random.triangular(0,g.mean_registeration, 2*g.mean_registeration)
         
-        self.individual_level_results['Service_time_receptionist'] = register_time
-        
-        
+        patient.service_reception = register_time
         #add variables to the df
-        ED_sim.add_to_df(self)
-        print(self.individual_level_results)
+        
+        ED_sim.add_to_df(self, patient)
         
         yield self.env.timeout(register_time)
     
@@ -135,32 +137,35 @@ class ED_sim (object):
         pass
     
     def acu_ass (self, patient):
+        
+        
+        
         pass    
     
-    def add_to_df(self):
+    def add_to_df(self, patient):
         '''
         Basically takes all the variables and adds them to the dataframe without having to enter them manually with 
         4 line codes in every function
         '''
         df_to_add = pd.DataFrame({
-            "UHID" :[self.patient_counter],
-            "Time_entered_in_system" : [self.time_entered_in_system],
-            "Q_time_receptionist":[self.q_time_rec],
+            "UHID" :[patient.id],
+            "Time_entered_in_system" : [patient.time_entered_in_system],
+            "Q_time_receptionist":[patient.q_time_rec],
             
             #using zeros as placeholders
-            "Q_time_nurse":[0],
-            "Q_time_acu_doc":[0],
-            "Q_time_ed_doc":[0],
-            "Service_time_receptionist":[0],
-            "Service_time_nurse":[0],
-            "Service_time_acu_doc":[0],
-            "Service_time_ed_doc":[0],
+            "Q_time_nurse":[patient.q_nurse],
+            "Q_time_acu_doc":[patient.q_acu_ass],
+            "Q_time_ed_doc":[patient.q_edd_ass],
+            "Service_time_receptionist":[patient.service_reception],
+            "Service_time_nurse":[patient.service_nurse],
+            "Service_time_acu_doc":[patient.acu_ass_time],
+            "Service_time_ed_doc":[patient.ed_ass_time],
             "Total time in System":[0]        
               })
         
         df_to_add.set_index('UHID', inplace=True)
-        self.individual_level_results._append(df_to_add)
-        
+        self.individual_level_results = self.individual_level_results._append(df_to_add)
+        print(self.individual_level_results)
         
         
     def mean_calculator (self, dataframe):
