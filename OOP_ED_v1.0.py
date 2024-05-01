@@ -34,9 +34,9 @@ class g (object):
     acu_doc = 1
     
     #simulation variables
-    number_of_runs = 10
+    number_of_runs = 100
     warmup_time = 1440 #24 hours and 60 minutes per hour
-    run_time = 100 # mins
+    run_time = 24*60 # mins
 
 class ed_patient (object):
     '''
@@ -286,7 +286,7 @@ class ED_sim (object):
         '''
         self.env.process(self.generate_ed_arrivals())
         self.env.run(until = g.run_time)
-        print(self.individual_level_results)
+        #print(self.individual_level_results)
         self.individual_level_results.to_csv(r"C:\Users\varad\Desktop\Education Material\Mathematical Modelling\HSMA\HSMA_modelling_ED\individual_results.csv")
         self.mean_calculator()
         self.export_row_to_csv()
@@ -417,11 +417,7 @@ class summary_statistics(object):
         
         
 
-def sim(number_of_runs):
-    '''
-    runs the simulation for the specified number of times
-    '''
-    pass
+
 
 
 def change_initial_condition(independent_variable):
@@ -436,7 +432,7 @@ def file_opener():
     Adds one row to the filename that is passed to it
     '''
     #This is not the most compulsory function here as the above function will also create a file if it does not exist already
-    print('inside file opener')
+    
     with open (r"C:\Users\varad\Desktop\Education Material\Mathematical Modelling\HSMA\HSMA_modelling_ED\trial_results.csv",'w') as f:
         writer = csv.writer(f, delimiter = ',')
         columns_headers = ["Run_Number",
@@ -479,26 +475,27 @@ def file_opener():
 
 
 
-def Plotter (dataframe):
-    '''
-    takes in a dataframe and returns a nice plot
-    '''
-    pass
+
 
 
 file_opener()
 
 
-for l in range(5,10):
-    
+for l in range(1,11):
+    print("Pt interarrival time = ", l)
     for run in range (g.number_of_runs):
         print(f"Run {run + 1} of {g.number_of_runs}")
         my_ED_model = ED_sim(run)
         my_ED_model.run()
+    g.ed_inter_arrival = l 
+    my_sum_stats = summary_statistics()
+    my_sum_stats.mean_of_means()
+    
+    
 
 
-my_sum_stats = summary_statistics()
-my_sum_stats.mean_of_means()
+
+
     
 
         
