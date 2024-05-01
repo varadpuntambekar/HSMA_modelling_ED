@@ -1,0 +1,2 @@
+Pt Interarrival Time (lambda),Median_Q_Rec_time,25_Q_rec_time,75_Q_rec_time,Median_Q_Nurse_time,25_Q_Nurse_time,75_Q_Nurse_time,Median_Q_ED_time,25_Q_ED_time,75_Q_ED_time,Median_Q_ACU_time,25_Q_ACU_time,75_Q_ACU_time,Median_Rec_%_utilize,Median_Nurse_%_utilize,Median_ED_doc_%_utilize,Median_ACU_doc_%_utilize
+6,0.30520840325378945,0.0,0.7182458535298334,0.0390577454687035,0.0,0.5486105413057115,8.51176952692908,5.664382305017961,13.439202568862951,0.0,0.0,0.0,0.10288568040611155,0.16943857267850404,0.7468234680773642,0.5106481788611514

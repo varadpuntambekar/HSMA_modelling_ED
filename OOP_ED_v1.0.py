@@ -34,7 +34,7 @@ class g (object):
     acu_doc = 1
     
     #simulation variables
-    number_of_runs = 1
+    number_of_runs = 10
     warmup_time = 1440 #24 hours and 60 minutes per hour
     run_time = 100 # mins
 
@@ -74,7 +74,7 @@ class ED_sim (object):
         self.nurse = simpy.Resource(self.env, capacity = g.nurse)
         self.ed_doc = simpy.Resource(self.env, capacity = g.ed_doc)
         self.acu_doc = simpy.Resource(self.env, capacity = g.acu_doc)
-        self.run_number = run_number
+        self.run_number = run_number +1
         
         #initiating a dataframe with required columns
         self.individual_level_results = pd.DataFrame({
@@ -218,7 +218,7 @@ class ED_sim (object):
     def add_to_df(self, patient):
         '''
         Basically takes all the variables and adds them to the dataframe without having to enter them manually with 
-        4 line codes in every function
+        12 line codes in every function
         '''
         df_to_add = pd.DataFrame({
             "UHID" :[patient.id],
@@ -254,10 +254,10 @@ class ED_sim (object):
         
         #%resource utilisation
         self.Rec_utilize = self.individual_level_results[
-            'Service_time_receptionist'].sum()/g.run_time*g.receptionist
-        self.Nurse_utilize = self.individual_level_results['Service_time_nurse'].sum()/g.run_time*g.nurse
-        self.ED_doc_utilize = self.individual_level_results['Service_time_ed_doc'].sum()/g.run_time*g.ed_doc
-        self.ACU_doc_utilize = self.individual_level_results['Service_time_acu_doc'].sum()/g.run_time*g.acu_doc
+            'Service_time_receptionist'].sum()/(g.run_time*g.receptionist)
+        self.Nurse_utilize = self.individual_level_results['Service_time_nurse'].sum()/(g.run_time*g.nurse)
+        self.ED_doc_utilize = self.individual_level_results['Service_time_ed_doc'].sum()/(g.run_time*g.ed_doc)
+        self.ACU_doc_utilize = self.individual_level_results['Service_time_acu_doc'].sum()/(g.run_time*g.acu_doc)
     
         
     
@@ -268,18 +268,8 @@ class ED_sim (object):
     
         with open (r"C:\Users\varad\Desktop\Education Material\Mathematical Modelling\HSMA\HSMA_modelling_ED\trial_results.csv",'a') as f:
             writer = csv.writer(f, delimiter = ',')
-            columns_headers = ["Run_Number",
-                              "Mean_Q_Rec_time",
-                              "Mean_Q_Nurse_time",
-                              "Mean_Q_ED_time",
-                              "Mean_Q_ACU_time",
-                              "Rec_%_utilize",
-                              "Nurse_%_utilize",
-                              "ED_doc_%_utilize",
-                              "ACU_doc_%_utilize"]
-            
-            writer.writerow(columns_headers)
-            row_to_add = [self.Mean_Q_Rec_time,
+            row_to_add = [self.run_number,
+                self.Mean_Q_Rec_time,
                                self.Mean_Q_Nurse_time,
                                self.Mean_Q_ED_time,
                                self.Mean_Q_ACU_time,
@@ -295,7 +285,7 @@ class ED_sim (object):
         suns the simulation program
         '''
         self.env.process(self.generate_ed_arrivals())
-        self.env.run(g.run_time)
+        self.env.run(until = g.run_time)
         print(self.individual_level_results)
         self.individual_level_results.to_csv(r"C:\Users\varad\Desktop\Education Material\Mathematical Modelling\HSMA\HSMA_modelling_ED\individual_results.csv")
         self.mean_calculator()
@@ -307,20 +297,124 @@ class summary_statistics(object):
     So this object calculates the means of means
     '''
     def __init__(self):
-        pass
+        self.total_mean_df = pd.DataFrame({
+            "Median_q_rec_time":[],
+            "25_q_rec_time":[],
+            "75_q_rec_time":[],
+            
+            "Median_q_nurse_time":[],
+            "25_q_nurse_time":[],
+            "75_q_nurse_time":[],
+            
+            "Median_q_ed_doc_time":[],
+            "25_q_ed_doc_time":[],
+            "75_q_ed_doc_time":[],
+            
+            "Median_q_acu_doc_time":[],
+            "25_q_acu_doc_time":[],
+            "75_q_acu_doc_time":[],
+            
+            "Median_%_utilize_rec":[],
+           
+            "Median_%_utilize_nurse":[],
+            
+            
+            "Median_%_utilize_ed_doc":[],
+           
+            
+            "Median_%_utilize_acu_doc":[],
+            
+            })
+        filepath = r"C:\Users\varad\Desktop\Education Material\Mathematical Modelling\HSMA\HSMA_modelling_ED\trial_results.csv"
+        self.dataframe = pd.read_csv(filepath)
     
-    def mean_of_means(self, dataframe):
+    def mean_of_means(self):
         
-        #mean of reg times
-        #mean of q time for rec
-        #mean of q time for nurse
-        #mean of q time for ed doc
-        #mean of q time for acu doc
-        #mean of sum of all q times
-        #sum of ed service times
-        #sum of acu service times
-        #percent service utilisation
-        pass
+        median_q_rec = self.dataframe["Mean_Q_Rec_time"].median()
+        twofive_q_rec = self.dataframe["Mean_Q_Rec_time"].quantile(0.25)
+        sevfive_q_rec = self.dataframe["Mean_Q_Rec_time"].quantile(0.75)
+        
+        median_q_nurse = self.dataframe["Mean_Q_Nurse_time"].median()
+        twofive_q_nurse = self.dataframe["Mean_Q_Nurse_time"].quantile(0.25)
+        sevfive_q_nurse = self.dataframe["Mean_Q_Nurse_time"].quantile(0.75)
+        
+        median_q_ed_doc = self.dataframe["Mean_Q_ED_time"].median()
+        twofive_q_ed_doc = self.dataframe["Mean_Q_ED_time"].quantile(0.25)
+        sevfive_q_ed_doc = self.dataframe["Mean_Q_ED_time"].quantile(0.75)
+        
+        median_q_acu_doc = self.dataframe["Mean_Q_ACU_time"].median()
+        twofive_q_acu_doc = self.dataframe["Mean_Q_ACU_time"].quantile(0.25)
+        sevfive_q_acu_doc = self.dataframe["Mean_Q_ACU_time"].quantile(0.75)
+        
+        median_rec_uti = self.dataframe["Rec_%_utilize"].median()
+        median_nurse_uti = self.dataframe["Nurse_%_utilize"].median()
+        median_ed_doc_uti = self.dataframe["ED_doc_%_utilize"].median()
+        median_acu_doc_uti = self.dataframe["ACU_doc_%_utilize"].median()
+        
+        
+        print("Results of " +  str(g.number_of_runs) + " runs")
+        print("-------------")
+        
+        self.total_mean_df = pd.DataFrame({
+            "Median_q_rec_time":[median_q_rec],
+            "25_q_rec_time":[twofive_q_rec],
+            "75_q_rec_time":[sevfive_q_rec],
+            
+            "Median_q_nurse_time":[median_q_nurse],
+            "25_q_nurse_time":[twofive_q_nurse],
+            "75_q_nurse_time":[sevfive_q_nurse],
+            
+            "Median_q_ed_doc_time":[median_q_ed_doc],
+            "25_q_ed_doc_time":[twofive_q_ed_doc],
+            "75_q_ed_doc_time":[sevfive_q_ed_doc],
+            
+            "Median_q_acu_doc_time":[median_q_acu_doc],
+            "25_q_acu_doc_time":[twofive_q_acu_doc],
+            "75_q_acu_doc_time":[sevfive_q_acu_doc],
+            
+            "Median_%_utilize_rec":[median_rec_uti],
+           
+            
+            "Median_%_utilize_nurse":[median_nurse_uti],
+           
+            
+            "Median_%_utilize_ed_doc":[median_ed_doc_uti],
+          
+            
+            "Median_%_utilize_acu_doc":[median_acu_doc_uti],
+           
+            })
+    
+        print(self.total_mean_df)
+        
+        with open (r"C:\Users\varad\Desktop\Education Material\Mathematical Modelling\HSMA\HSMA_modelling_ED\mean_per_lambda.csv",'a') as f:
+            writer = csv.writer(f, delimiter = ',')
+            row_to_add = [g.ed_inter_arrival,
+                          median_q_rec,
+                          twofive_q_rec,
+                          sevfive_q_rec,
+                          
+                          median_q_nurse,
+                          twofive_q_nurse,
+                          sevfive_q_nurse,
+                          
+                          median_q_ed_doc,
+                          twofive_q_ed_doc,
+                          sevfive_q_ed_doc,
+                          
+                          median_q_acu_doc,
+                          twofive_q_acu_doc,
+                          sevfive_q_acu_doc,
+                          
+                          median_rec_uti,
+                          median_nurse_uti,
+                          median_ed_doc_uti,
+                          median_acu_doc_uti
+                          ]
+            writer.writerow(row_to_add)
+        
+        
+        
         
 
 def sim(number_of_runs):
@@ -335,20 +429,15 @@ def change_initial_condition(independent_variable):
     This function, modifies the initial condition once such as increases the inter-arrival time by a certain increment
     And stores the results of all the sims for the different initial condition in a different dataframe
     '''
-
-def file_opener(filename):
-    '''
-    Opens a file when given a filename or a filepath and makes it suitable for writing
-    '''
     pass
 
-def file_opener(filename):
+def file_opener():
     '''
     Adds one row to the filename that is passed to it
     '''
     #This is not the most compulsory function here as the above function will also create a file if it does not exist already
-    with open (r"C:\Users\varad\Desktop\Education Material\
-               Mathematical Modelling\HSMA\HSMA_modelling_ED\trial_results",'w') as f:
+    print('inside file opener')
+    with open (r"C:\Users\varad\Desktop\Education Material\Mathematical Modelling\HSMA\HSMA_modelling_ED\trial_results.csv",'w') as f:
         writer = csv.writer(f, delimiter = ',')
         columns_headers = ["Run_Number",
                           "Mean_Q_Rec_time",
@@ -360,6 +449,32 @@ def file_opener(filename):
                           "ED_doc_%_utilize",
                           "ACU_doc_%_utilize"]
         writer.writerow(columns_headers)
+        
+        with open (r"C:\Users\varad\Desktop\Education Material\Mathematical Modelling\HSMA\HSMA_modelling_ED\mean_per_lambda.csv",'w') as f:
+            writer = csv.writer(f, delimiter = ',')
+            columns_headers = ["Pt Interarrival Time (lambda)",
+                              "Median_Q_Rec_time",
+                              "25_Q_rec_time",
+                              "75_Q_rec_time",
+                              
+                              "Median_Q_Nurse_time",
+                              "25_Q_Nurse_time",
+                              "75_Q_Nurse_time",
+                              
+                              "Median_Q_ED_time",
+                              "25_Q_ED_time",
+                              "75_Q_ED_time",
+                              
+                              "Median_Q_ACU_time",
+                              "25_Q_ACU_time",
+                              "75_Q_ACU_time",
+                              
+                              "Median_Rec_%_utilize",
+                              "Median_Nurse_%_utilize",
+                              "Median_ED_doc_%_utilize",
+                              "Median_ACU_doc_%_utilize"]
+            
+            writer.writerow(columns_headers)
 
 
 
@@ -370,7 +485,20 @@ def Plotter (dataframe):
     '''
     pass
 
-ED_sim(1).run()
+
+file_opener()
+
+
+for l in range(5,10):
+    
+    for run in range (g.number_of_runs):
+        print(f"Run {run + 1} of {g.number_of_runs}")
+        my_ED_model = ED_sim(run)
+        my_ED_model.run()
+
+
+my_sum_stats = summary_statistics()
+my_sum_stats.mean_of_means()
     
 
         
