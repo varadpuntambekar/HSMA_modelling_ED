@@ -15,6 +15,7 @@ import pandas as pd
 import random
 import csv
 import gradio as gr
+import plotly.graph_objects as go
 
 class g (object):
     '''
@@ -74,18 +75,18 @@ class ED_sim (object):
         
         
         #declaring resource capacity as variables to later be changed through gradio inputs
-        self.receptionist = receptionist
-        self.nurse = nurse
-        self.ed_doc = ed_doc
-        self.acu_doc = acu_doc
+        self.rec_no = receptionist
+        self.nurse_no = nurse
+        self.ed_doc_no = ed_doc
+        self.acu_doc_no = acu_doc
         
 
         self.patient_counter = 0
         #declaring resources
-        self.receptionist = simpy.Resource(self.env, capacity = self.receptionist)
-        self.nurse = simpy.Resource(self.env, capacity = self.nurse)
-        self.ed_doc = simpy.Resource(self.env, capacity = self.ed_doc)
-        self.acu_doc = simpy.Resource(self.env, capacity = self.acu_doc)
+        self.receptionist = simpy.Resource(self.env, capacity = self.rec_no)
+        self.nurse = simpy.Resource(self.env, capacity = self.nurse_no)
+        self.ed_doc = simpy.Resource(self.env, capacity = self.ed_doc_no)
+        self.acu_doc = simpy.Resource(self.env, capacity = self.acu_doc_no)
         self.run_number = run_number + 1
         
         #initiating a dataframe with required columns
@@ -181,9 +182,7 @@ class ED_sim (object):
         
         
         
-            yield self.env.timeout(triage_time)
-        
-        
+            yield self.env.timeout(triage_time)       
     
     def ed_ass (self, patient):
         start_ed_q = self.env.now
@@ -266,10 +265,10 @@ class ED_sim (object):
         
         #%resource utilisation
         self.Rec_utilize = self.individual_level_results[
-            'Service_time_receptionist'].sum()/(g.run_time*g.receptionist)
-        self.Nurse_utilize = self.individual_level_results['Service_time_nurse'].sum()/(g.run_time*g.nurse)
-        self.ED_doc_utilize = self.individual_level_results['Service_time_ed_doc'].sum()/(g.run_time*g.ed_doc)
-        self.ACU_doc_utilize = self.individual_level_results['Service_time_acu_doc'].sum()/(g.run_time*g.acu_doc)
+            'Service_time_receptionist'].sum()/(g.run_time*self.rec_no)
+        self.Nurse_utilize = self.individual_level_results['Service_time_nurse'].sum()/(g.run_time*self.nurse_no)
+        self.ED_doc_utilize = self.individual_level_results['Service_time_ed_doc'].sum()/(g.run_time*self.ed_doc_no)
+        self.ACU_doc_utilize = self.individual_level_results['Service_time_acu_doc'].sum()/(g.run_time*self.acu_doc_no)
     
         
     
@@ -474,7 +473,7 @@ def Plotter():
     filepath = r"C:\Users\varad\Desktop\Education Material\Mathematical Modelling\HSMA\HSMA_modelling_ED\mean_per_lambda.csv"
     df_to_plot = pd.read_csv(filepath)
 
-    ax,figure = plt.subplots()
+    figure = plt.subplots()
     plt.plot(df_to_plot["Pt Interarrival Time (lambda)"], df_to_plot['Median_Q_Rec_time'], color = 'green', linestyle = '-', label = 'Queue for reception')
     plt.plot(df_to_plot["Pt Interarrival Time (lambda)"], df_to_plot['Median_Q_Nurse_time'], color = 'blue', linestyle = ':', label = 'Queue for nurses')
     plt.plot(df_to_plot["Pt Interarrival Time (lambda)"], df_to_plot['Median_Q_ED_time'], color = 'red', linestyle = '--', label = 'Queue for ED_doc')
@@ -487,9 +486,9 @@ def Plotter():
     plt.text(3,10,"Rec = 1, Nur = 2, ED_doc = 2, ACU_doc = 1")
     plt.legend()
 
-    plt.show()
+    
 
-    ax,figure = plt.subplots()
+    figure = plt.subplots()
     plt.plot(df_to_plot["Pt Interarrival Time (lambda)"], df_to_plot['Median_Rec_%_utilize'], color = 'green', linestyle = '-', label = '% utilise of reception')
     plt.plot(df_to_plot["Pt Interarrival Time (lambda)"], df_to_plot['Median_Nurse_%_utilize'], color = 'blue', linestyle = ':', label = '% utilise of nurses')
     plt.plot(df_to_plot["Pt Interarrival Time (lambda)"], df_to_plot['Median_ED_doc_%_utilize'], color = 'red', linestyle = '--', label = '%utilise of ED_doc')
@@ -502,21 +501,45 @@ def Plotter():
     plt.text(3,10,"Rec = 1, Nur = 2, ED_doc = 2, ACU_doc = 1")
     plt.legend()
 
-    plt.show()
+    
+    return figure
+
+def plotly_plotter():
+    '''
+    Uses the Plotly library to plot the graphs as the plotly library is web application friendly
+    '''
+    filepath = r"C:\Users\varad\Desktop\Education Material\Mathematical Modelling\HSMA\HSMA_modelling_ED\mean_per_lambda.csv"
+    df_to_plot = pd.read_csv(filepath)
+
+    fig = go.Figure()
+    fig.add_trace(go.Scatter(x = df_to_plot["Pt Interarrival Time (lambda)"], y = df_to_plot['Median_Rec_%_utilize'], name='Receptionist utilization%'))
+    fig.add_trace(go.Scatter(x = df_to_plot["Pt Interarrival Time (lambda)"], y = df_to_plot['Median_Nurse_%_utilize'], name='Nurse utilization%'))
+    fig.add_trace(go.Scatter(x = df_to_plot["Pt Interarrival Time (lambda)"], y = df_to_plot['Median_ED_doc_%_utilize'], name='ED Doc utilization%'))
+    fig.add_trace(go.Scatter(x = df_to_plot["Pt Interarrival Time (lambda)"], y = df_to_plot['Median_ACU_doc_%_utilize'], name='ACU Doc utilization%'))
+    fig.update_layout(title = "% utilization of different HR")
+    #fig.show()
+
+    return fig
 
 
-def main():
+
+def main(receptionist, nurse, ed_doc, acu_doc):
+    '''
+    this is going to to be the main function that gradio will operate on
+    It will take input parameters as model parameters which will be modified by the users
+    It will output a plot or a set of plots which will then be plotted in a given block in gradio
+    '''
     file_opener()
     for l in range(1,11):
         print("Pt interarrival time = ", l)
         for run in range (g.number_of_runs):
             print(f"Run {run + 1} of {g.number_of_runs}")
-            my_ED_model = ED_sim(run)
+            my_ED_model = ED_sim(run, receptionist, nurse, ed_doc, acu_doc)
             my_ED_model.run()
         g.ed_inter_arrival = l 
         my_sum_stats = summary_statistics()
         my_sum_stats.mean_of_means()
-    Plotter()
+    return plotly_plotter()
 
 def get_data_gradio():
     filepath = r"C:\Users\varad\Desktop\Education Material\Mathematical Modelling\HSMA\HSMA_modelling_ED\mean_per_lambda.csv"
@@ -540,13 +563,16 @@ with gr.Blocks() as demo:
         ed_doc = gr.Slider(minimum=1, maximum=10, label = "No of ED doctors")
         acu_doc = gr.Slider(minimum=1, maximum=10,label = "No of ACU Doctors")
     
-    output = gr.LinePlot(get_data_gradio, x = "Pt Interarrival Time (lambda)", y="Median_Q_Rec_time", y_title="Median queue time for receptionist (min)", overlay_point=True, width=500, height=500)
-
+    
     with gr.Row():
         btn = gr.Button(value = "Run the Simulation")
+        
+        
+    with gr.Row():
+        output = gr.Plot(label = "Simulation Run")
         btn.click(main,[receptionist,nurse,ed_doc,acu_doc], output)
+demo.launch(share = True)   
 
-demo.launch()
 
 
 
