@@ -14,25 +14,20 @@ import numpy as np
 import pandas as pd
 import random
 import csv
-import gradio as gr
-import plotly.graph_objects as go
-from tkinter import *
 
 class g (object):
     '''
     A class that holds all the global variables that will be passed into the different processes.
     It's easier to change the global variables here rather than change them in the process code as it could lead to errors
     '''
-    #service times (these are more or less constant and hence won't be changed through user input, although it is possible to change them too,
-    #but for the sake of this program, they won't be changed)
+    #service times
     ed_inter_arrival = 6 #mins
     mean_registeration = 2 #mins
     mean_triage = 6 #mins
     mean_acu_ass = 60 #mins
     mean_ed_ass = 30 #mins
     
-    #resources (this will need to me moved from a static variable to a variable within the ED class as it will then be fed into the gradio app
-    #as variables to be modified through user input)
+    #resources
     receptionist = 1
     nurse = 2
     ed_doc = 2
@@ -69,26 +64,17 @@ class ED_sim (object):
     '''
     This is the actual clinic where everything is simulated.
     '''
-    def __init__(self, run_number,receptionist = 3, nurse = 2, ed_doc = 2, acu_doc = 1  ):
+    def __init__(self, run_number):
         #declaring the environment
         self.env = simpy.Environment()
-        
-        
-        
-        #declaring resource capacity as variables to later be changed through gradio inputs
-        self.rec_no = receptionist
-        self.nurse_no = nurse
-        self.ed_doc_no = ed_doc
-        self.acu_doc_no = acu_doc
-        
-
         self.patient_counter = 0
+        
         #declaring resources
-        self.receptionist = simpy.Resource(self.env, capacity = self.rec_no)
-        self.nurse = simpy.Resource(self.env, capacity = self.nurse_no)
-        self.ed_doc = simpy.Resource(self.env, capacity = self.ed_doc_no)
-        self.acu_doc = simpy.Resource(self.env, capacity = self.acu_doc_no)
-        self.run_number = run_number + 1
+        self.receptionist = simpy.Resource(self.env, capacity = g.receptionist)
+        self.nurse = simpy.Resource(self.env, capacity = g.nurse)
+        self.ed_doc = simpy.Resource(self.env, capacity = g.ed_doc)
+        self.acu_doc = simpy.Resource(self.env, capacity = g.acu_doc)
+        self.run_number = run_number +1
         
         #initiating a dataframe with required columns
         self.individual_level_results = pd.DataFrame({
@@ -183,7 +169,9 @@ class ED_sim (object):
         
         
         
-            yield self.env.timeout(triage_time)       
+            yield self.env.timeout(triage_time)
+        
+        
     
     def ed_ass (self, patient):
         start_ed_q = self.env.now
@@ -266,10 +254,10 @@ class ED_sim (object):
         
         #%resource utilisation
         self.Rec_utilize = self.individual_level_results[
-            'Service_time_receptionist'].sum()/(g.run_time*self.rec_no)
-        self.Nurse_utilize = self.individual_level_results['Service_time_nurse'].sum()/(g.run_time*self.nurse_no)
-        self.ED_doc_utilize = self.individual_level_results['Service_time_ed_doc'].sum()/(g.run_time*self.ed_doc_no)
-        self.ACU_doc_utilize = self.individual_level_results['Service_time_acu_doc'].sum()/(g.run_time*self.acu_doc_no)
+            'Service_time_receptionist'].sum()/(g.run_time*g.receptionist)
+        self.Nurse_utilize = self.individual_level_results['Service_time_nurse'].sum()/(g.run_time*g.nurse)
+        self.ED_doc_utilize = self.individual_level_results['Service_time_ed_doc'].sum()/(g.run_time*g.ed_doc)
+        self.ACU_doc_utilize = self.individual_level_results['Service_time_acu_doc'].sum()/(g.run_time*g.acu_doc)
     
         
     
@@ -474,7 +462,7 @@ def Plotter():
     filepath = r"C:\Users\varad\Desktop\Education Material\Mathematical Modelling\HSMA\HSMA_modelling_ED\mean_per_lambda.csv"
     df_to_plot = pd.read_csv(filepath)
 
-    figure = plt.subplots()
+    ax,figure = plt.subplots()
     plt.plot(df_to_plot["Pt Interarrival Time (lambda)"], df_to_plot['Median_Q_Rec_time'], color = 'green', linestyle = '-', label = 'Queue for reception')
     plt.plot(df_to_plot["Pt Interarrival Time (lambda)"], df_to_plot['Median_Q_Nurse_time'], color = 'blue', linestyle = ':', label = 'Queue for nurses')
     plt.plot(df_to_plot["Pt Interarrival Time (lambda)"], df_to_plot['Median_Q_ED_time'], color = 'red', linestyle = '--', label = 'Queue for ED_doc')
@@ -487,9 +475,9 @@ def Plotter():
     plt.text(3,10,"Rec = 1, Nur = 2, ED_doc = 2, ACU_doc = 1")
     plt.legend()
 
-    
+    plt.show()
 
-    figure = plt.subplots()
+    ax,figure = plt.subplots()
     plt.plot(df_to_plot["Pt Interarrival Time (lambda)"], df_to_plot['Median_Rec_%_utilize'], color = 'green', linestyle = '-', label = '% utilise of reception')
     plt.plot(df_to_plot["Pt Interarrival Time (lambda)"], df_to_plot['Median_Nurse_%_utilize'], color = 'blue', linestyle = ':', label = '% utilise of nurses')
     plt.plot(df_to_plot["Pt Interarrival Time (lambda)"], df_to_plot['Median_ED_doc_%_utilize'], color = 'red', linestyle = '--', label = '%utilise of ED_doc')
@@ -502,148 +490,28 @@ def Plotter():
     plt.text(3,10,"Rec = 1, Nur = 2, ED_doc = 2, ACU_doc = 1")
     plt.legend()
 
-    
-    return figure
-
-def plotly_plotter():
-    '''
-    Uses the Plotly library to plot the graphs as the plotly library is web application friendly
-    '''
-    filepath = r"C:\Users\varad\Desktop\Education Material\Mathematical Modelling\HSMA\HSMA_modelling_ED\mean_per_lambda.csv"
-    df_to_plot = pd.read_csv(filepath)
-
-    fig = go.Figure()
-    fig.add_trace(go.Scatter(x = df_to_plot["Pt Interarrival Time (lambda)"], y = df_to_plot['Median_Rec_%_utilize'], name='Receptionist utilization%'))
-    fig.add_trace(go.Scatter(x = df_to_plot["Pt Interarrival Time (lambda)"], y = df_to_plot['Median_Nurse_%_utilize'], name='Nurse utilization%'))
-    fig.add_trace(go.Scatter(x = df_to_plot["Pt Interarrival Time (lambda)"], y = df_to_plot['Median_ED_doc_%_utilize'], name='ED Doc utilization%'))
-    fig.add_trace(go.Scatter(x = df_to_plot["Pt Interarrival Time (lambda)"], y = df_to_plot['Median_ACU_doc_%_utilize'], name='ACU Doc utilization%'))
-    fig.update_layout(title = "% utilization of different HR")
-    #fig.show()
-
-    return fig
+    plt.show()
 
 
-
-def main(receptionist, nurse, ed_doc, acu_doc):
-    '''
-    this is going to to be the main function that gradio will operate on
-    It will take input parameters as model parameters which will be modified by the users
-    It will output a plot or a set of plots which will then be plotted in a given block in gradio
-    '''
+def main():
     file_opener()
     for l in range(1,11):
         print("Pt interarrival time = ", l)
         for run in range (g.number_of_runs):
             print(f"Run {run + 1} of {g.number_of_runs}")
-            my_ED_model = ED_sim(run, receptionist, nurse, ed_doc, acu_doc)
+            my_ED_model = ED_sim(run)
             my_ED_model.run()
         g.ed_inter_arrival = l 
         my_sum_stats = summary_statistics()
         my_sum_stats.mean_of_means()
-    return plotly_plotter()
-
-def get_data_gradio():
-    filepath = r"C:\Users\varad\Desktop\Education Material\Mathematical Modelling\HSMA\HSMA_modelling_ED\mean_per_lambda.csv"
-    return pd.read_csv(filepath)
-
-
-
-#main()
-
-
-#gradio implementation for a web_application    
-with gr.Blocks() as demo:
-    gr.Markdown(r"A Discrete Event Simulation run of an imaginary Emergency Room")
-
-    with gr.Row():
-        gr.Textbox(label = "Modify these parameters (number of different human resources) using the sliders below")
-    with gr.Row():
-        receptionist = gr.Slider(minimum=1, maximum=10,label = "No of Receptionists")
-        nurse = gr.Slider(minimum=1, maximum=10, label = "No of Nurses")
-    with gr.Row():    
-        ed_doc = gr.Slider(minimum=1, maximum=10, label = "No of ED doctors")
-        acu_doc = gr.Slider(minimum=1, maximum=10,label = "No of ACU Doctors")
     
-    
-    with gr.Row():
-        btn = gr.Button(value = "Run the Simulation")
-        
-        
-    with gr.Row():
-        output = gr.Plot(label = "Simulation Run")
-        btn.click(main,[receptionist,nurse,ed_doc,acu_doc], output)
-#demo.launch(share = True)   
-
-
-#tkinter animation implementation for one run of the simulation
-#skeleton code
-
-class ed_visualization(object):
-    def __init__(self, root, height, width, delay):
-        
-        #declare the variables
-        self.root = root
-        self.root.title('Mock ER Animation')
-
-        self.height = height
-        self.width = width
-        self.delay = delay
-        
-        #draw the canvas
-        self.master = Tk()
-        self.canvas = Canvas(self.master, height = 400, width = 900, bg='white')
-        self.canvas.pack
-        self.canvas.update()
-
-
-        #draw the rectangles on the canvas that denote the rooms
-        self.canvas.create_rectangle(0,0,900,400, bg = 'white', bd = 'black', borderwidth = 2) #biggest layout
-        self.canvas.create_rectangle(20,20,880,380, bg = 'white', bd = 'black', borderwidth = 5) #hospital boundaries
 
 
 
-
-
-
-    def create_patient():
-        #draw a circle denoting a patient
-
-        #declare the starting position
-        
-        #returns one patient in a given location
-        pass
-    
-    def update():
-        #updates the visualization with every time step
-
-        #deletes patients that should be deleted
-
-        #draws patients that should be drawn
-        
-        pass
-
-    def move_pt():
-        #This will be one of the most tricky implementation
-        #Might also involve implementing more helper functions depending on where to move the patient
-        #Involve moving the patient from one part of the clinic to the other
-        #luckily all the coordinates of the room points will be predefined
-
-        #try to implement movement in a way so that objects collide rather than overlap each other
-
-        #use the .after() method for continuous movement
-        #use the .bbox () method to detect the boundaries of objects and do something if there is a collission
-        #use the attractive and repulsive forces concept to keep the balls close to each other.
-
-
-        pass
-    
-    
-if __name__ == "__main__":
-    root = Tk()
-
-
+main()
 
     
+
         
         
         
@@ -667,3 +535,19 @@ if __name__ == "__main__":
     
     
     
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+
+
