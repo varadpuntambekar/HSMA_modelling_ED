@@ -6,7 +6,7 @@ import random
 #skeleton code
 
 class ed_visualization(object):
-    def __init__(self, root, height = 400, width = 900, delay = 0.2):
+    def __init__(self, root, height = 400, width = 900, delay = 2):
         
         #declare the variables
         self.root = root
@@ -56,29 +56,6 @@ class ed_visualization(object):
         self.pt = self.canvas.create_oval (x0,y0,x1,y1, fill='red')
         return self.pt
         
-    
-    def update():
-        #updates the visualization with every time step
-
-        #deletes patients that should be deleted
-
-        #draws patients that should be drawn
-        
-        pass
-
-    def move_pt():
-        #This will be one of the most tricky implementation
-        #Might also involve implementing more helper functions depending on where to move the patient
-        #Involve moving the patient from one part of the clinic to the other
-        #luckily all the coordinates of the room points will be predefined
-
-        #try to implement movement in a way so that objects collide rather than overlap each other
-
-        #use the .after() method for continuous movement
-        #use the .bbox () method to detect the boundaries of objects and do something if there is a collission
-        #use the attractive and repulsive forces concept to keep the balls close to each other.
-        #can make this hella complicated, but right now, just making an MPV so as simplistic as possible will also make different move_to functions for different steps in the ER
-        pass
 
     def move_to_reg(self):
         #coordinates of registration x = 100,200
@@ -89,7 +66,7 @@ class ed_visualization(object):
 
         for i in range (100):
             self.canvas.move(self.pt, step_x,step_y)
-            self.canvas.after(20)
+            self.canvas.after(self.delay)
             self.canvas.update()
 
     def move_to_triage(self):
@@ -102,7 +79,7 @@ class ed_visualization(object):
 
         for i in range (100):
             self.canvas.move(self.pt, step_x,step_y)
-            self.canvas.after(20)
+            self.canvas.after(self.delay)
             self.canvas.update()
         
     def move_to_ED(self):
@@ -115,12 +92,25 @@ class ed_visualization(object):
 
         for i in range (100):
             self.canvas.move(self.pt, step_x,step_y)
-            self.canvas.after(20)
+            self.canvas.after(self.delay)
+            self.canvas.update()
+
+    def move_to_ACU(self):
+        #coordinates of registration x = 100,200
+        ACU_x = 600 + random.uniform(5,20) #adding some noise to the final destinatino so that there is no overlap
+        ACU_y = 250 + random.uniform(5,20)
+        pt_coords = self.canvas.coords(self.pt)
+        step_x = (ACU_x - pt_coords[0])/100
+        step_y = (ACU_y - pt_coords[1])/100
+
+        for i in range (100):
+            self.canvas.move(self.pt, step_x,step_y)
+            self.canvas.after(self.delay)
             self.canvas.update()
 
     def move_to_exit(self):
         #coordinates of registration x = 100,200
-        exit_x = 370 + random.uniform(5,20) #adding some noise to the final destinatino so that there is no overlap
+        exit_x = 800 + random.uniform(5,20) #adding some noise to the final destinatino so that there is no overlap
         exit_y = 200 + random.uniform(5,20)
         pt_coords = self.canvas.coords(self.pt)
         step_x = (exit_x - pt_coords[0])/100
@@ -128,34 +118,12 @@ class ed_visualization(object):
 
         for i in range (100):
             self.canvas.move(self.pt, step_x,step_y)
-            self.canvas.after(20)
-            self.canvas.update()
-
-    def move_to_ACU(self):
-        #coordinates of registration x = 100,200
-        ACU_x = 900 + random.uniform(5,20) #adding some noise to the final destinatino so that there is no overlap
-        ACU_y = 200 + random.uniform(5,20)
-        pt_coords = self.canvas.coords(self.pt)
-        step_x = (ACU_x - pt_coords[0])/100
-        step_y = (ACU_y - pt_coords[1])/100
-
-        for i in range (100):
-            self.canvas.move(self.pt, step_x,step_y)
-            self.canvas.after(20)
+            self.canvas.after(self.delay)
             self.canvas.update()
     
 if __name__ == "__main__":
     root = Tk()
     root.geometry('900x400')
-    sim = ed_visualization(root)
-    for i in range (10):
-        sim.create_patient()
-        sim.move_to_reg()
-        sim.move_to_triage()
-        if random.uniform(0,1) < 0.8:
-            sim.move_to_ED()
-            
-        else:
-            sim.move_to_ACU()
+    
             
     root.mainloop()

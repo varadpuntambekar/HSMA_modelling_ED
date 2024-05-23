@@ -17,6 +17,7 @@ import csv
 import gradio as gr
 import plotly.graph_objects as go
 from tkinter import *
+from tkinter_window import *
 
 class g (object):
     '''
@@ -65,6 +66,8 @@ class ed_patient (object):
         self.time_exit_system = 0
         self.tot_system_time = 0
 
+        
+
 class ED_sim (object):
     '''
     This is the actual clinic where everything is simulated.
@@ -72,8 +75,6 @@ class ED_sim (object):
     def __init__(self, run_number,receptionist = 3, nurse = 2, ed_doc = 2, acu_doc = 1  ):
         #declaring the environment
         self.env = simpy.Environment()
-        
-        
         
         #declaring resource capacity as variables to later be changed through gradio inputs
         self.rec_no = receptionist
@@ -117,19 +118,22 @@ class ED_sim (object):
         self.ED_doc_utilize = 0
         self.ACU_doc_utilize = 0
         
-        
+        #tkinter_variables
+        self.root = Tk()
+        self.root.geometry('900x400')
+        self.sim = ed_visualization(self.root)
         
     def generate_ed_arrivals(self):
         while True:
             self.patient_counter += 1 #this is also the UHID of the patient
             
             ed_pt = ed_patient(self.patient_counter)
-            
+            self.sim.create_patient()
             ed_pt.time_entered_in_system = self.env.now #Used to calculate total time spent in the system
             
             #Patient goes to registeration
             self.env.process(self.registration(ed_pt))
-            
+            self.sim.move_to_reg()
             #print(self.individual_level_results)
             #draws a random value from an exponential distribution with lambda = interarrival time
             ed_arrival_time = random.expovariate(1/g.ed_inter_arrival)
@@ -151,7 +155,7 @@ class ED_sim (object):
         
         #patient goes to triage
             self.env.process(self.triage(patient))
-        
+            self.sim.move_to_triage()
         #register_time = random.triangular(0,g.mean_registeration, 2*g.mean_registeration)
             register_time = random.expovariate(1/g.mean_registeration)
         
@@ -173,9 +177,10 @@ class ED_sim (object):
         #patient goes either to ACU or to ED based on probability
             if random.random() > 0.2: #80% chance that the patient goes to ED
                 self.env.process(self.ed_ass(patient))
+                self.sim.move_to_ED()
             else:
                 self.env.process(self.acu_ass(patient))
-
+                self.sim.move_to_ACU()
         
             triage_time = random.triangular(g.mean_triage/2, g.mean_triage, g.mean_triage*2 )
         
@@ -199,9 +204,9 @@ class ED_sim (object):
         
         
             yield self.env.timeout(ed_ass_time)
-            
+            #patient exits the system
             patient.time_exit_system = self.env.now    
-        
+            self.sim.move_to_exit()
             patient.tot_system_time = patient.time_exit_system - patient.time_entered_in_system
     
             ED_sim.add_to_df(self, patient)
@@ -221,8 +226,10 @@ class ED_sim (object):
             patient.acu_ass_time = acu_ass_time
             yield self.env.timeout(acu_ass_time)
         
+            #patient exits the system
             patient.time_exit_system = self.env.now
-            
+            self.sim.move_to_exit()
+
             patient.tot_system_time = patient.time_exit_system - patient.time_entered_in_system
             ED_sim.add_to_df(self, patient)
         
@@ -578,74 +585,11 @@ with gr.Blocks() as demo:
 #tkinter animation implementation for one run of the simulation
 #skeleton code
 
-class ed_visualization(object):
-    def __init__(self, root, height, width, delay):
-        
-        #declare the variables
-        self.root = root
-        self.root.title('Mock ER Animation')
-
-        self.height = height
-        self.width = width
-        self.delay = delay
-        
-        #draw the canvas
-        self.master = Tk()
-        self.canvas = Canvas(self.master, height = 400, width = 900, bg='white')
-        self.canvas.pack
-        self.canvas.update()
-
-
-        #draw the rectangles on the canvas that denote the rooms
-        self.canvas.create_rectangle(0,0,900,400, bg = 'white', bd = 'black', borderwidth = 2) #biggest layout
-        self.canvas.create_rectangle(20,20,880,380, bg = 'white', bd = 'black', borderwidth = 5) #hospital boundaries
-
-
-
-
-
-
-    def create_patient():
-        #draw a circle denoting a patient
-
-        #declare the starting position
-        
-        #returns one patient in a given location
-        pass
-    
-    def update():
-        #updates the visualization with every time step
-
-        #deletes patients that should be deleted
-
-        #draws patients that should be drawn
-        
-        pass
-
-    def move_pt():
-        #This will be one of the most tricky implementation
-        #Might also involve implementing more helper functions depending on where to move the patient
-        #Involve moving the patient from one part of the clinic to the other
-        #luckily all the coordinates of the room points will be predefined
-
-        #try to implement movement in a way so that objects collide rather than overlap each other
-
-        #use the .after() method for continuous movement
-        #use the .bbox () method to detect the boundaries of objects and do something if there is a collission
-        #use the attractive and repulsive forces concept to keep the balls close to each other.
-
-
-        pass
-    
     
 if __name__ == "__main__":
-    root = Tk()
-
-
-
-    
-        
-        
+    my_ED_sim = ED_sim(1)
+    my_ED_sim.run()
+    mainloop()    
         
         
         
