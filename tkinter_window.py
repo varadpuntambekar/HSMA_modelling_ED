@@ -1,5 +1,6 @@
 from tkinter import *
 #import trial_for_import
+import random
 
 #tkinter animation implementation for one run of the simulation
 #skeleton code
@@ -45,13 +46,16 @@ class ed_visualization(object):
 
 
 
-    def create_patient():
-        #draw a circle denoting a patient
+    def create_patient(self):
+        radius = 5
+        x0 = 35 - radius
+        x1 = 35+ radius
+        y0 = 200 - radius
+        y1 = 200 + radius
 
-        #declare the starting position
+        self.pt = self.canvas.create_oval (x0,y0,x1,y1, fill='red')
+        return self.pt
         
-        #returns one patient in a given location
-        pass
     
     def update():
         #updates the visualization with every time step
@@ -73,13 +77,85 @@ class ed_visualization(object):
         #use the .after() method for continuous movement
         #use the .bbox () method to detect the boundaries of objects and do something if there is a collission
         #use the attractive and repulsive forces concept to keep the balls close to each other.
-
-
+        #can make this hella complicated, but right now, just making an MPV so as simplistic as possible will also make different move_to functions for different steps in the ER
         pass
-    
+
+    def move_to_reg(self):
+        #coordinates of registration x = 100,200
+        reg_x = 100 + random.uniform(5,20) #adding some noise to the final destinatino so that there is no overlap
+        reg_y = 200 + random.uniform(5,20)
+        step_x = (reg_x - 35)/100
+        step_y = (reg_y - 200)/100
+
+        for i in range (100):
+            self.canvas.move(self.pt, step_x,step_y)
+            self.canvas.after(20)
+            self.canvas.update()
+
+    def move_to_triage(self):
+        #coordinates of registration x = 100,200
+        tri_x = 320 + random.uniform(5,20) #adding some noise to the final destinatino so that there is no overlap
+        tri_y = 200 + random.uniform(5,20)
+        pt_coords = self.canvas.coords(self.pt)
+        step_x = (tri_x - pt_coords[0])/100
+        step_y = (tri_y - pt_coords[1])/100
+
+        for i in range (100):
+            self.canvas.move(self.pt, step_x,step_y)
+            self.canvas.after(20)
+            self.canvas.update()
+        
+    def move_to_ED(self):
+        #coordinates of registration x = 100,200
+        ED_x = 600 + random.uniform(10,50) #adding some noise to the final destinatino so that there is no overlap
+        ED_y = 100 + random.uniform(10,50)
+        pt_coords = self.canvas.coords(self.pt)
+        step_x = (ED_x - pt_coords[0])/100
+        step_y = (ED_y - pt_coords[1])/100
+
+        for i in range (100):
+            self.canvas.move(self.pt, step_x,step_y)
+            self.canvas.after(20)
+            self.canvas.update()
+
+    def move_to_exit(self):
+        #coordinates of registration x = 100,200
+        exit_x = 370 + random.uniform(5,20) #adding some noise to the final destinatino so that there is no overlap
+        exit_y = 200 + random.uniform(5,20)
+        pt_coords = self.canvas.coords(self.pt)
+        step_x = (exit_x - pt_coords[0])/100
+        step_y = (exit_y - pt_coords[1])/100
+
+        for i in range (100):
+            self.canvas.move(self.pt, step_x,step_y)
+            self.canvas.after(20)
+            self.canvas.update()
+
+    def move_to_ACU(self):
+        #coordinates of registration x = 100,200
+        ACU_x = 900 + random.uniform(5,20) #adding some noise to the final destinatino so that there is no overlap
+        ACU_y = 200 + random.uniform(5,20)
+        pt_coords = self.canvas.coords(self.pt)
+        step_x = (ACU_x - pt_coords[0])/100
+        step_y = (ACU_y - pt_coords[1])/100
+
+        for i in range (100):
+            self.canvas.move(self.pt, step_x,step_y)
+            self.canvas.after(20)
+            self.canvas.update()
     
 if __name__ == "__main__":
     root = Tk()
     root.geometry('900x400')
     sim = ed_visualization(root)
+    for i in range (10):
+        sim.create_patient()
+        sim.move_to_reg()
+        sim.move_to_triage()
+        if random.uniform(0,1) < 0.8:
+            sim.move_to_ED()
+            
+        else:
+            sim.move_to_ACU()
+            
     root.mainloop()
